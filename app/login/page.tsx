@@ -63,10 +63,17 @@ type Inputs = {
   }
 
   const protocol = host?.includes("localhost") ? "http" : "https";
-  const redirectUrl = `${protocol}://${host}/auth/callback`;
-
+  const siteUrl = host || process.env.NEXT_PUBLIC_SITE_URL;
+  
+  // Remove the protocol from the `siteUrl` if it's already included
+  const cleanSiteUrl = siteUrl.replace(/(^\w+:|^)\/\//, '');
+  
+  const redirectUrl = `${protocol}://${cleanSiteUrl}/auth/callback?next=/models`;
+  
   console.log({ redirectUrl });
-
+  
+  
+  
   
 
   const signInWithMagicLink = async (email: string) => {
