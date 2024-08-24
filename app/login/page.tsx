@@ -1,67 +1,153 @@
-"use client";
+'use client'
 
-import { login, signup } from './actions';
+import React from 'react';
+import { Button } from '@/components/ui/button'; // Update import paths as needed
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { Database } from '../types/supabase'; 
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import disposableDomains from 'disposable-email-domains';
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { AiOutlineGoogle } from 'react-icons/ai';
+import { WaitingForMagicLink } from './WaitingForMagicLink';
 
-export default function LoginPage() {
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    await login(formData);
+type Inputs = {
+  email: string;
+};
+
+const Login: React.FC<{
+  host: string | null;
+  searchParams?: { [key: string]: string | string[] | undefined };
+}> = ({ host, searchParams }) => {
+  const supabase = createClientComponentClient<Database>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
+  const { toast } = useToast();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitted },
+  } = useForm<Inputs>();
+
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    setIsSubmitting(true);
+    try {
+      await signInWithMagicLink(data.email);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        toast({
+          title: "Email sent",
+          description: "Check your inbox for a magic link to sign in.",
+          duration: 5000,
+        });
+        setIsMagicLinkSent(true);
+      }, 1000);
+    } catch (error) {
+      setIsSubmitting(false);
+      toast({
+        title: "Something went wrong",
+        variant: "destructive",
+        description:
+          "Please try again, if the problem persists, contact us at hello@tryleap.ai",
+        duration: 5000,
+      });
+    }
   };
 
-  const handleSignup = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget.closest('form') as HTMLFormElement);
-    await signup(formData);
+  let inviteToken = null;
+  if (searchParams && "inviteToken" in searchParams) {
+    inviteToken = searchParams["inviteToken"];
+  }
+
+  const protocol = host?.includes("localhost") ? "http" : "https";
+  const redirectUrl = `${protocol}://${host}/auth/callback`;
+
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+
+    console.log(data, error);
   };
+
+  const signInWithMagicLink = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
+
+    if (error) {
+      console.log(`Error: ${error.message}`);
+    }
+  };
+
+  if (isMagicLinkSent) {
+    return (
+      <WaitingForMagicLink toggleState={() => setIsMagicLinkSent(false)} />
+    );
+  }
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-center text-gray-700">Welcome</h2>
-        <p className="mt-2 text-center text-gray-600">Sign in or create an account to get started.</p>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-            />
-          </div>
-          {/* <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-            />
-          </div> */}
-          <div className="flex space-x-4">
-            <button
+    <>
+      <div className="flex items-center justify-center p-8">
+        <div className="flex flex-col gap-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 p-4 rounded-xl max-w-sm w-full">
+          <h1 className="text-xl">Welcome</h1>
+          <p className="text-xs opacity-60">
+            Sign in or create an account to get started.
+          </p>
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-2"
+          >
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  {...register("email", {
+                    required: true,
+                    validate: {
+                      emailIsValid: (value: string) =>
+                        /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
+                        "Please enter a valid email",
+                      emailDoesntHavePlus: (value: string) =>
+                        /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) ||
+                        "Email addresses with a '+' are not allowed",
+                      emailIsntDisposable: (value: string) =>
+                        !disposableDomains.includes(value.split("@")[1]) ||
+                        "Please use a permanent email address",
+                    },
+                  })}
+                />
+                {isSubmitted && errors.email && (
+                  <span className={"text-xs text-red-400"}>
+                    {errors.email?.message || "Email is required to sign in"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <Button
+              disabled={isSubmitting}
+              variant="outline"
+              className="w-full"
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
             >
-              Log in
-            </button>
-            <button
-              type="button"
-              onClick={handleSignup}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-purple-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              Sign up
-            </button>
-          </div>
-        </form>
+              {isSubmitting ? 'Loading...' : 'Continue with Email'}
+            </Button>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default Login;
