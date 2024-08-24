@@ -1,25 +1,26 @@
-'use client'
+"use client";
 
-import React from 'react';
-import { Button } from '@/components/ui/button'; // Update import paths as needed
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
-import { Database } from '../types/supabase'; 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import disposableDomains from 'disposable-email-domains';
-import { useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { AiOutlineGoogle } from 'react-icons/ai';
-import { WaitingForMagicLink } from './WaitingForMagicLink';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { Database } from "../types/supabase"; 
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import disposableDomains from "disposable-email-domains";
+import { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { WaitingForMagicLink } from "./WaitingForMagicLink";
 
 type Inputs = {
   email: string;
 };
 
-const Login: React.FC<{
+ const Login = ({
+  host,
+  searchParams,
+}: {
   host: string | null;
   searchParams?: { [key: string]: string | string[] | undefined };
-}> = ({ host, searchParams }) => {
+}) => {
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
@@ -64,16 +65,9 @@ const Login: React.FC<{
   const protocol = host?.includes("localhost") ? "http" : "https";
   const redirectUrl = `${protocol}://${host}/auth/callback`;
 
-  const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
+  console.log({ redirectUrl });
 
-    console.log(data, error);
-  };
+  
 
   const signInWithMagicLink = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
@@ -102,6 +96,15 @@ const Login: React.FC<{
           <p className="text-xs opacity-60">
             Sign in or create an account to get started.
           </p>
+          {/* <Button
+            onClick={signInWithGoogle}
+            variant={"outline"}
+            className="font-semibold"
+          >
+            <AiOutlineGoogle size={20} />
+            Continue with Google
+          </Button>
+          <OR /> */}
 
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -136,12 +139,13 @@ const Login: React.FC<{
             </div>
 
             <Button
+              isLoading={isSubmitting}
               disabled={isSubmitting}
               variant="outline"
               className="w-full"
               type="submit"
             >
-              {isSubmitting ? 'Loading...' : 'Continue with Email'}
+              Continue with Email
             </Button>
           </form>
         </div>
@@ -150,4 +154,13 @@ const Login: React.FC<{
   );
 };
 
+export const OR = () => {
+  return (
+    <div className="flex items-center my-1">
+      <div className="border-b flex-grow mr-2 opacity-50" />
+      <span className="text-sm opacity-50">OR</span>
+      <div className="border-b flex-grow ml-2 opacity-50" />
+    </div>
+  );
+};
 export default Login;
