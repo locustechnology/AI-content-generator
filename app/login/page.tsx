@@ -1,20 +1,21 @@
-"use client";
+'use client'
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Database } from "../types/supabase"; 
+import { Database } from "../types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import disposableDomains from "disposable-email-domains";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { WaitingForMagicLink } from "./WaitingForMagicLink";
+import { AiOutlineGoogle } from "react-icons/ai";  // Make sure to import this
 
 type Inputs = {
   email: string;
 };
 
- const Login = ({
+const Login = ({
   host,
   searchParams,
 }: {
@@ -51,7 +52,7 @@ type Inputs = {
         title: "Something went wrong",
         variant: "destructive",
         description:
-          "Please try again, if the problem persists, contact us at hello@tryleap.ai",
+          "Please try again, if the problem persists, contact us at gostudio@tryleap.ai",
         duration: 5000,
       });
     }
@@ -62,30 +63,40 @@ type Inputs = {
     inviteToken = searchParams["inviteToken"];
   }
 
-  const protocol = host?.includes("localhost") ? "http" : "https";
-  const siteUrl = host || process.env.NEXT_PUBLIC_SITE_URL;
-  
-  // Remove the protocol from the `siteUrl` if it's already included
-  const cleanSiteUrl = siteUrl.replace(/(^\w+:|^)\/\//, '');
-  
-  const redirectUrl = `${protocol}://${cleanSiteUrl}/auth/callback?next=/models`;
-  
-  console.log({ redirectUrl });
-  
-  
-  
-  
-
   const signInWithMagicLink = async (email: string) => {
+    const protocol = host?.includes("localhost") ? "http" : "https";
+    const siteUrl = host || process.env.NEXT_PUBLIC_SITE_URL;
+    
+    const redirectUrl = `${siteUrl}/auth/callback?next=/models`;
+    
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: redirectUrl,
       },
     });
+  
+    if (error) {
+      console.log(`Error: ${error.message}`);
+      throw error;
+    }
+  };
+
+  // Define the signInWithGoogle function
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
 
     if (error) {
       console.log(`Error: ${error.message}`);
+      toast({
+        title: "Google sign-in failed",
+        variant: "destructive",
+        description:
+          "Please try again, if the problem persists, contact us at gostudio@tryleap.ai",
+        duration: 5000,
+      });
     }
   };
 
@@ -103,7 +114,7 @@ type Inputs = {
           <p className="text-xs opacity-60">
             Sign in or create an account to get started.
           </p>
-          {/* <Button
+          <Button
             onClick={signInWithGoogle}
             variant={"outline"}
             className="font-semibold"
@@ -111,7 +122,7 @@ type Inputs = {
             <AiOutlineGoogle size={20} />
             Continue with Google
           </Button>
-          <OR /> */}
+          <OR />
 
           <form
             onSubmit={handleSubmit(onSubmit)}

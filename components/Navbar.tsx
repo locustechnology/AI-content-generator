@@ -13,7 +13,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import React from "react";
 import { Database } from "@/app/types/supabase"; 
-import ClientSideCredits from "./realtime/ClientSideCredits"; 
+import ClientSideCredits from "./realtime/ClientSideCredits";
 
 export const dynamic = "force-dynamic";
 
@@ -67,18 +67,17 @@ export default async function Navbar() {
                 <AvatarIcon height={24} width={24} className="text-primary" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel className="text-sm">Account</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-primary text-center overflow-hidden text-ellipsis">{user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/profile">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/logout">Logout</Link>
-                </DropdownMenuItem>
+                <form action="/auth/sign-out" method="post">
+                  <Button
+                    type="submit"
+                    className="w-full text-left"
+                    variant={"ghost"}
+                    >
+                    Log out
+                  </Button>
+                </form>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
