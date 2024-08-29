@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export const Login = ({
   } = useForm<Inputs>();
 
   const protocol = host?.includes("localhost") ? "http" : "https";
-  const redirectUrl = `${protocol}://${host}/auth/callback`;
+  const redirectUrl = `${protocol}://${host}/auth/callback?next=${searchParams?.next || "/overview"}`;
 
   console.log({ redirectUrl });
 
@@ -53,16 +53,13 @@ export const Login = ({
   };
 
   const signInWithGoogle = async () => {
-    const protocol = host?.includes("localhost") ? "http" : "https";
-    const redirectUrl = `${protocol}://${host}/auth/callback`;
-  
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectUrl,
       },
     });
-  
+
     if (error) {
       console.log(`Error: ${error.message}`);
       toast({
@@ -74,7 +71,6 @@ export const Login = ({
       });
     }
   };
-  
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsSubmitting(true);
@@ -179,4 +175,5 @@ export const OR = () => {
     </div>
   );
 };
+
 export default Login;
