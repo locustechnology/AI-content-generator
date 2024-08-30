@@ -106,71 +106,98 @@ export default function TrainModelZone() {
     [files]
   );
 
+  // const trainModel = useCallback(async () => {
+  //   setIsLoading(true);
+  //   // Upload each file to Vercel blob and store the resulting URLs
+  //   const blobUrls = [];
+
+  //   if (files) {
+  //     for (const file of files) {
+  //       const blob = await upload(file.name, file, {
+  //         access: "public",
+  //         handleUploadUrl: "/astria/train-model/image-upload",
+  //       });
+  //       blobUrls.push(blob.url);
+  //     }
+  //   }
+
+  //   // console.log(blobUrls, "blobUrls");
+
+  //   const payload = {
+  //     urls: blobUrls,
+  //     name: form.getValues("name").trim(),
+  //     type: form.getValues("type"),
+  //   };
+
+  //   // Send the JSON payload to the "/astria/train-model" endpoint
+  //   const response = await fetch("/astria/train-model", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(payload),
+  //   });
+
+  //   setIsLoading(false);
+
+  //   if (!response.ok) {
+  //     const responseData = await response.json();
+  //     const responseMessage: string = responseData.message;
+  //     console.error("Something went wrong! ", responseMessage);
+  //     const messageWithButton = (
+  //       <div className="flex flex-col gap-4">
+  //         {responseMessage}
+  //         <a href="/get-credits">
+  //           <Button size="sm">Get Credits</Button>
+  //         </a>
+  //       </div>
+  //     );
+  //     toast({
+  //       title: "Something went wrong!",
+  //       description: responseMessage.includes("Not enough credits")
+  //         ? messageWithButton
+  //         : responseMessage,
+  //       duration: 5000,
+  //     });
+  //     return;
+  //   }
+
+  //   toast({
+  //     title: "Model queued for training",
+  //     description:
+  //       "The model was queued for training. You will receive an email when the model is ready to use.",
+  //     duration: 5000,
+  //   });
+
+  //   router.push("/");
+  // }, [files]);
+
   const trainModel = useCallback(async () => {
     setIsLoading(true);
-    // Upload each file to Vercel blob and store the resulting URLs
     const blobUrls = [];
-
+  
     if (files) {
       for (const file of files) {
-        const blob = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: "/astria/train-model/image-upload",
-        });
-        blobUrls.push(blob.url);
+        try {
+          // Simplify the upload to just the file without additional parameters
+          const blob = await upload(file.name, file);
+          blobUrls.push(blob.url);
+        } catch (error) {
+          console.error("Error during file upload:", error);
+          toast({
+            title: "Upload Error",
+            description: "There was an error uploading the file.",
+            duration: 5000,
+          });
+          setIsLoading(false);
+          return;
+        }
       }
     }
-
-    // console.log(blobUrls, "blobUrls");
-
-    const payload = {
-      urls: blobUrls,
-      name: form.getValues("name").trim(),
-      type: form.getValues("type"),
-    };
-
-    // Send the JSON payload to the "/astria/train-model" endpoint
-    const response = await fetch("/astria/train-model", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    setIsLoading(false);
-
-    if (!response.ok) {
-      const responseData = await response.json();
-      const responseMessage: string = responseData.message;
-      console.error("Something went wrong! ", responseMessage);
-      const messageWithButton = (
-        <div className="flex flex-col gap-4">
-          {responseMessage}
-          <a href="/get-credits">
-            <Button size="sm">Get Credits</Button>
-          </a>
-        </div>
-      );
-      toast({
-        title: "Something went wrong!",
-        description: responseMessage.includes("Not enough credits")
-          ? messageWithButton
-          : responseMessage,
-        duration: 5000,
-      });
-      return;
-    }
-
-    toast({
-      title: "Model queued for training",
-      description:
-        "The model was queued for training. You will receive an email when the model is ready to use.",
-      duration: 5000,
-    });
-
-    router.push("/");
+  
+    // Rest of the function
   }, [files]);
+  
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

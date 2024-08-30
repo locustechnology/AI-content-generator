@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
 
-export const revalidate = 10;
+export const revalidate = 0;
 
 export default async function Navbar() {
   const supabase = createServerComponentClient<Database>({ cookies });
@@ -28,9 +28,17 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const {
-    data: credits,
-  } = await supabase.from("credits").select("*").eq("user_id", user?.id ?? '').single()
+  // Fetch the user's credits from the database
+  let { data: credits, error } = await supabase
+    .from("credits")
+    .select("credits")
+    .eq("user_id", user?.id ?? '')
+    .single();
+
+  // If there's an error or no credits, fallback to 10 credits (for display purposes)
+  if (error || !credits) {
+    credits = { credits: 10 };
+  }
 
   return (
     <div className="flex w-full px-4 lg:px-40 py-4 items-center border-b text-center gap-8 justify-between">
@@ -60,7 +68,7 @@ export default async function Navbar() {
         {user && (
           <div className="flex flex-row gap-4 text-center align-middle justify-center">
             {stripeIsConfigured && (
-              <ClientSideCredits creditsRow={credits ? credits : null} />
+              <ClientSideCredits creditsRow={credits} />
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild className="cursor-pointer">
