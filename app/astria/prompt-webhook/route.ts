@@ -12,7 +12,7 @@ const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
 
 if (!resendApiKey) {
   console.warn(
-    "We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your RESEND_API_KEY to your environment variables if you want to enable email notifications."
+    "We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your  to your environment variables if you want to enable email notifications."
   );
 }
 
