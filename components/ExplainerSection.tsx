@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import blur from "/public/blur.png";
 import example from "/public/example.png";
 import result from "/public/result.png";
@@ -19,8 +20,8 @@ export default function ExplainerSection() {
           Upload 4+ high-quality selfies: front facing, 1 person in frame, no
           glasses or hats.
         </p>
-        <img
-          src={example.src}
+        <Image
+          src={example}
           alt="AI Headshot example"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />
@@ -37,8 +38,8 @@ export default function ExplainerSection() {
         <p className="text-sm text-gray-600 text-center">
           The AI magic takes ~20 minutes. You'll get an email when its ready!
         </p>
-        <img
-          src={blur.src}
+        <Image
+          src={blur}
           alt="AI Headshot blur"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />
@@ -55,8 +56,8 @@ export default function ExplainerSection() {
         <p className="text-sm text-gray-600 text-center">
           Once your model is trained, we'll give you amazing headshots!
         </p>
-        <img
-          src={result.src}
+        <Image
+          src={result}
           alt="AI Headshot result"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />

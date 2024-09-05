@@ -11,24 +11,26 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-import { Database } from "@/app/types/supabase"; 
+import { Database } from "@/app/types/supabase";
+
 import { Icons } from "./icons";
 import { useRouter } from "next/navigation";
-import { modelRowWithSamples } from "@/app/types/utils"; 
+import { modelRowWithSamples } from "@/app/types/utils";
 
 type ModelsTableProps = {
   models: modelRowWithSamples[];
 };
 
-export default async function ModelsTable({ models }: ModelsTableProps) {
+export default function ModelsTable({ models }: ModelsTableProps) {
   const router = useRouter();
+
   const handleRedirect = (id: number) => {
     router.push(`/overview/models/${id}`);
   };
 
   return (
     <div className="rounded-md border">
-      <Table className="w-full">
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -53,7 +55,7 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
                       model.status === "finished" ? "default" : "secondary"
                     }
                   >
-                    {model.status === "processing" ? "training" : model.status }
+                    {model.status === "processing" ? "training" : model.status}
                     {model.status === "processing" && (
                       <Icons.spinner className="h-4 w-4 animate-spin" />
                     )}
@@ -65,11 +67,12 @@ export default async function ModelsTable({ models }: ModelsTableProps) {
                 <div className="flex gap-2 flex-shrink-0 items-center">
                   {model.samples.slice(0, 3).map((sample) => (
                     <Avatar key={sample.id}>
-                      <AvatarImage src={sample.uri} className="object-cover" />
+                      <AvatarImage src={sample.uri} alt="Sample" className="object-cover" />
+                      <AvatarFallback>Sample</AvatarFallback>
                     </Avatar>
                   ))}
                   {model.samples.length > 3 && (
-                    <Badge className="rounded-full h-10" variant={"outline"}>
+                    <Badge className="rounded-full h-10" variant="outline">
                       +{model.samples.length - 3}
                     </Badge>
                   )}

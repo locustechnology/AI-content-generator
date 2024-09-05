@@ -1,7 +1,7 @@
 "use client";
 
-import { Database } from "@/app/types/supabase"; 
-import { creditsRow } from "@/app/types/utils"; 
+import { Database } from "@/app/types/supabase";
+import { creditsRow } from "@/app/types/utils";
 import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 
@@ -14,24 +14,16 @@ type ClientSideCreditsProps = {
 export default function ClientSideCredits({
   creditsRow,
 }: ClientSideCreditsProps) {
-
-  const [state, setState] = useState(initialValue); // Ensure this is not inside a conditional
-
-  useEffect(() => {
-    // Your effect logic
-  }, []);
-
-  if (!creditsRow) return (
-    <p>Credits: 0</p>
-  )
-
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-  );
-  const [credits, setCredits] = useState<creditsRow>(creditsRow);
+  const [credits, setCredits] = useState<creditsRow | null>(creditsRow);
 
   useEffect(() => {
+    if (!creditsRow) return;
+
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+    );
+
     const channel = supabase
       .channel("realtime credits")
       .on(
@@ -46,11 +38,9 @@ export default function ClientSideCredits({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, credits, setCredits]);
+  }, [creditsRow]);
 
-  if (!credits) return null;
+  if (!credits) return <p>Credits: 0</p>;
 
-  return (
-    <p>Credits: {credits.credits}</p>
-  );
+  return <p>Credits: {credits.credits}</p>;
 }
