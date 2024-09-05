@@ -3,8 +3,7 @@
 import { Database } from "@/app/types/supabase"; 
 import { creditsRow } from "@/app/types/utils"; 
 import { createClient } from "@supabase/supabase-js";
-import { useState, useEffect } from "react";
-import Image from 'next/image';
+import { useEffect, useState } from "react";
 
 export const revalidate = 0;
 
@@ -46,9 +45,6 @@ export default function ClientSideCredits({
   if (!credits) return null;
 
   return (
-    <div>
-      <Image src="/path/to/image.jpg" alt="Credits" width={100} height={100} />
-      <p>Credits: {credits.credits}</p>
-    </div>
+    <p>Credits: {credits.credits}</p>
   );
 }
