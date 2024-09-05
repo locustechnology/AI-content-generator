@@ -15,6 +15,12 @@ export default function ClientSideCredits({
   creditsRow,
 }: ClientSideCreditsProps) {
 
+  const [state, setState] = useState(initialValue); // Ensure this is not inside a conditional
+
+  useEffect(() => {
+    // Your effect logic
+  }, []);
+
   if (!creditsRow) return (
     <p>Credits: 0</p>
   )

@@ -54,7 +54,9 @@ export default function ClientSideModel({
               <div className="flex flex-row gap-4 flex-wrap">
                 {samples.map((sample) => (
                   <img
+                    key={sample.id} // Add a unique key prop
                     src={sample.uri}
+                    alt="Sample image" // Add meaningful alt text
                     className="rounded-md w-60 h-60 object-cover"
                   />
                 ))}
