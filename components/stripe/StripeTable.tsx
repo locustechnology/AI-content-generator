@@ -47,25 +47,28 @@ const PaddlePricingTable = ({ user }: Props) => {
     }
   }, []);
 
-  // Open checkout with the given product ID
   const openCheckout = (productId: string) => {
-    if (paddleLoaded) { // Check if Paddle is loaded before calling Checkout
-      window.Paddle.Checkout.open({
-        product: productId,
-        email: user.email,
-        successCallback: (data: any) => {
-          console.log('Checkout successful:', data);
-        },
-        errorCallback: (error: any) => {
-          console.error('Checkout error:', error); // Capture and log any errors
-        },
-        closeCallback: () => {
-          console.log('Checkout closed');
-        }
-      });
-    } else {
+    if (!paddleLoaded) {
       console.error('Paddle is not loaded yet.');
+      return;
     }
+
+    window.Paddle.Checkout.open({
+      product: productId,
+      email: user.email,
+      successCallback: (data: any) => {
+        console.log('Checkout successful:', data);
+        // TODO: Implement success handling (e.g., update user subscription status)
+      },
+      errorCallback: (error: any) => {
+        console.error('Checkout error:', error);
+        // TODO: Implement error handling (e.g., show error message to user)
+      },
+      closeCallback: () => {
+        console.log('Checkout closed');
+        // TODO: Implement close handling if needed
+      }
+    });
   };
 
   return (
