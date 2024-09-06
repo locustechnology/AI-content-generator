@@ -15,7 +15,7 @@ type Inputs = {
   email: string;
 };
 
-export const Login = ({
+const LoginPage = ({
   host,
   searchParams,
 }: {
@@ -166,7 +166,7 @@ export const Login = ({
   );
 };
 
-export const OR = () => {
+const OR = () => {
   return (
     <div className="flex items-center my-1">
       <div className="border-b flex-grow mr-2 opacity-50" />
@@ -176,4 +176,4 @@ export const OR = () => {
   );
 };
 
-export default Login;
+export default LoginPage;
