@@ -15,13 +15,12 @@ type Inputs = {
   email: string;
 };
 
-const LoginPage = ({
-  host,
-  searchParams,
-}: {
+interface LoginPageProps {
   host: string | null;
   searchParams?: { [key: string]: string | string[] | undefined };
-}) => {
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
