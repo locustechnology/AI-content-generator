@@ -36,7 +36,7 @@ export default function ExplainerSection() {
           <h3 className="text-2xl font-semibold">Our AI gets to work</h3>
         </div>
         <p className="text-sm text-gray-600 text-center">
-          The AI magic takes ~20 minutes. You'll get an email when its ready!
+          The AI magic takes ~20 minutes. You&apos;ll get an email when its ready!
         </p>
         <Image
           src={blur}
@@ -54,7 +54,7 @@ export default function ExplainerSection() {
           <h3 className="text-2xl font-semibold">Get amazing headshots</h3>
         </div>
         <p className="text-sm text-gray-600 text-center">
-          Once your model is trained, we'll give you amazing headshots!
+          Once your model is trained, we&apos;ll give you amazing headshots!
         </p>
         <Image
           src={result}

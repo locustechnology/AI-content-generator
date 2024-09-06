@@ -60,15 +60,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        children={
-          isLoading ? (
-            <Icons.spinner className="h-4 w-4 animate-spin" />
-          ) : (
-            children
-          )
-        }
         {...props}
-      />
+      >
+        {isLoading ? (
+          <Icons.spinner className="h-4 w-4 animate-spin" />
+        ) : (
+          children
+        )}
+      </Comp>
     );
   }
 );

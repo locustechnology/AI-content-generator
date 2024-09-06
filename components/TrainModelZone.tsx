@@ -358,7 +358,7 @@ export default function TrainModelZone() {
                 <div className="flex justify-center flex-col items-center gap-2">
                   <FaImages size={32} className="text-gray-700" />
                   <p className="self-center">
-                    Drag 'n' drop some files here, or click to select files.
+                    Drag &apos;n&apos; drop some files here, or click to select files.
                   </p>
                 </div>
               )}
