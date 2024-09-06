@@ -20,8 +20,7 @@ interface LoginPageProps {
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-
-const LoginPage = ({ host, searchParams }: LoginPageProps) => {
+const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
