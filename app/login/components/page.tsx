@@ -16,9 +16,10 @@ type Inputs = {
 };
 
 interface LoginPageProps {
-  host: string | null;
+  host?: string; // allow null or undefined
   searchParams?: { [key: string]: string | string[] | undefined };
 }
+
 
 const LoginPage = ({ host, searchParams }: LoginPageProps) => {
   const supabase = createClientComponentClient<Database>();
