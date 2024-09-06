@@ -175,4 +175,4 @@ const OR = () => {
   );
 };
 
-export { LoginPage };
+export default LoginPage;
