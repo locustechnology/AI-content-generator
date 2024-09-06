@@ -80,7 +80,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ priceId, price, productName
     if (typeof window !== 'undefined' && window.Paddle) {
       const timer = setTimeout(() => {
         openCheckout();
-      }, 500); // Ensure the container exists
+      }, 500); 
       return () => clearTimeout(timer);
     } else {
       setError('Paddle SDK is not available. Please try again later.');
