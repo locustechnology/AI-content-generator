@@ -1,4 +1,5 @@
-"use client";
+'use client'
+import { FC } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +17,11 @@ type Inputs = {
 };
 
 interface LoginPageProps {
-  host?: string; // allow null or undefined
+  host?: string;
   searchParams?: { [key: string]: string | string[] | undefined };
 }
+const LoginPage: FC<LoginPageProps> = ({ host, searchParams }) => {
 
-const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
