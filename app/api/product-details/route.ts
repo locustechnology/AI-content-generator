@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 
-const productDatabase = {
+interface ProductDetails {
+  name: string;
+  price: string;
+  description: string;
+}
+
+interface ProductDatabase {
+  [key: string]: ProductDetails;
+}
+
+const productDatabase: ProductDatabase = {
   'pri_01j6w1gr39da9p41rymadfde5q': {
     name: "Starter Plan",
     price: "$35.00",
@@ -24,11 +34,11 @@ export async function GET(request: Request) {
 
   console.log('Received request for priceId:', priceId);
 
-  if (!priceId || !productDatabase[priceId]) {
+  if (!priceId || !(priceId in productDatabase)) {
     return NextResponse.json({ error: 'Invalid or missing priceId' }, { status: 400 });
   }
 
-  const productDetails = productDatabase[priceId];
+  const productDetails = productDatabase[priceId as keyof typeof productDatabase];
 
   console.log('Returning product details:', productDetails);
 
