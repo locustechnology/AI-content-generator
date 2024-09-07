@@ -20,16 +20,14 @@ type Inputs = {
 interface LoginPageProps {
   params: {};
   searchParams: { [key: string]: string | string[] | undefined };
-
 }
+
 const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
-
-
-
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
   const { toast } = useToast();
+  const searchParamsHook = useSearchParams();
 
   const {
     register,
@@ -37,8 +35,9 @@ const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
     formState: { errors, isSubmitted },
   } = useForm<Inputs>();
 
-  const protocol = host?.includes("localhost") ? "http" : "https";
-  const redirectUrl = `${protocol}://${host}/auth/callback?next=${searchParams?.next || "/overview"}`;
+  const protocol = typeof window !== 'undefined' && window.location.hostname.includes("localhost") ? "http" : "https";
+  const host = typeof window !== 'undefined' ? window.location.host : '';
+  const redirectUrl = `${protocol}://${host}/auth/callback?next=${searchParamsHook?.get('next') || "/overview"}`;
 
   console.log({ redirectUrl });
 
