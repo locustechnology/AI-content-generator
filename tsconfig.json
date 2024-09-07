@@ -27,6 +27,6 @@
     "**/*.tsx", 
     ".next/types/**/*.ts",
     "app/types/**/*.ts" // Ensure your custom types are included
-  ],
+, "components/stripe/checkouts.js"  ],
   "exclude": ["node_modules"]
 }

@@ -1,9 +1,9 @@
-import PaddlePricingTable from "@/components/stripe/StripeTable";
+import PaddlePricing from "@/components/stripe/PaddlePricing";
 
 const Page = () => {
   return (
     <div>
-      <PaddlePricingTable />
+     <PaddlePricing />
     </div>
   );
 };
