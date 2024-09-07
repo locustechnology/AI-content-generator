@@ -1,5 +1,6 @@
 'use client'
 import { FC } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +18,13 @@ type Inputs = {
 };
 
 interface LoginPageProps {
-  host?: string;
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: {};
+  searchParams: { [key: string]: string | string[] | undefined };
+
 }
-const LoginPage: FC<LoginPageProps> = ({ host, searchParams }) => {
+const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
+
+
 
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
