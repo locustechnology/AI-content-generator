@@ -1,96 +1,54 @@
-import { AvatarIcon } from "@radix-ui/react-icons";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import Link from "next/link";
-import { Button } from "./ui/button";
-import React from "react";
-import { Database } from "@/app/types/supabase"; 
-import ClientSideCredits from "./realtime/ClientSideCredits";
+import Image from "next/image";
+import { Database } from "@/app/types/supabase";
+import NavItems from "./NavItems";
+import MobileMenu from "./MobileMenu";
+import UserMenu from "./UserMenu";
+import logo from "/public/98.png";
 
 export const dynamic = "force-dynamic";
 
-const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
-
-export const revalidate = 0;
-
 export default async function Navbar() {
   const supabase = createServerComponentClient<Database>({ cookies });
-
+  
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch the user's credits from the database
-  let { data: credits, error } = await supabase
-    .from("credits")
-    .select("credits")
-    .eq("user_id", user?.id ?? '')
-    .single();
-
-  // If there's an error or no credits, fallback to 10 credits (for display purposes)
-  if (error || !credits) {
-    credits = { credits: 10 };
+  let credits = { credits: 0 };
+  if (user) {
+    const { data, error } = await supabase
+      .from("credits")
+      .select("credits")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (!error && data) {
+      credits = data;
+    }
   }
 
   return (
-    <div className="flex w-full px-4 lg:px-40 py-4 items-center border-b text-center gap-8 justify-between">
-      <div className="flex gap-2 h-full">
-        <Link href="/">
-          <h2 className="font-bold">Headshots AI</h2>
-        </Link>
-      </div>
-      {user && (
-        <div className="hidden lg:flex flex-row gap-2">
-          <Link href="/overview">
-            <Button variant={"ghost"}>Home</Button>
+    <nav className="bg-white shadow-sm rounded-full mx-4 my-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center">
+            <div className="bg-purple-600 rounded-lg p-1 mr-2">
+              <Image src={logo} alt="Studio.ai logo" width={20} height={20} className="rounded-sm" />
+            </div>
+            <span className="text-sm font-semibold">Studio.ai</span>
           </Link>
-          {stripeIsConfigured && (
-            <Link href="/get-credits">
-              <Button variant={"ghost"}>Get Credits</Button>
-            </Link>
-          )}
-        </div>
-      )}
-      <div className="flex gap-4 lg:ml-auto">
-        {!user && (
-          <Link href="/login">
-            <Button variant={"ghost"}>Login / Signup</Button>
-          </Link>
-        )}
-        {user && (
-          <div className="flex flex-row gap-4 text-center align-middle justify-center">
-            {stripeIsConfigured && (
-              <ClientSideCredits creditsRow={credits} />
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="cursor-pointer">
-                <AvatarIcon height={24} width={24} className="text-primary" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel className="text-primary text-center overflow-hidden text-ellipsis">{user.email}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <form action="/auth/sign-out" method="post">
-                  <Button
-                    type="submit"
-                    className="w-full text-left"
-                    variant={"ghost"}
-                    >
-                    Log out
-                  </Button>
-                </form>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          
+          <div className="hidden md:flex items-center space-x-4">
+            <NavItems />
+            <UserMenu user={user} credits={credits} />
           </div>
-        )}
+          
+          <MobileMenu user={user} credits={credits} />
+        </div>
       </div>
-    </div>
+    </nav>
   );
 }
