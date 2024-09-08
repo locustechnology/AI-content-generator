@@ -38,15 +38,24 @@ export default async function Navbar() {
             <div className="bg-purple-600 rounded-lg p-1 mr-2">
               <Image src={logo} alt="Studio.ai logo" width={20} height={20} className="rounded-sm" />
             </div>
-            <span className="text-sm font-semibold">Studio.ai</span>
+            <span className="font-bold py-2 rounded">Studio.ai</span>
           </Link>
           
-          <div className="hidden md:flex items-center space-x-4">
-            <NavItems />
-            <UserMenu user={user} credits={credits} />
-          </div>
-          
-          <MobileMenu user={user} credits={credits} />
+          {user ? (
+            <>
+              <div className="hidden md:flex items-center space-x-4">
+                <NavItems />
+                <UserMenu user={user} credits={credits} />
+              </div>
+              <MobileMenu user={user} credits={credits} />
+            </>
+          ) : (
+            <Link href="/login">
+              <button className="  font-bold py-2 px-4 rounded">
+                Login / Sign Up
+              </button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
