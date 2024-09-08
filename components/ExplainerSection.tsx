@@ -1,7 +1,7 @@
 import Image from 'next/image';
-import blur from "/public/blur.png";
-import example from "/public/example.png";
-import result from "/public/result.png";
+import Group from "/public/Group.png";
+import exampl from "/public/exampl.png";
+import resulte from "/public/resulte.png";
 
 export default function ExplainerSection() {
   return (
@@ -14,14 +14,13 @@ export default function ExplainerSection() {
           <div className="text-3xl font-bold text-blue-600 bg-white border-2 border-blue-600 rounded-full w-10 h-10 flex items-center justify-center">
             1
           </div>
-          <h3 className="text-2xl font-semibold">Upload your images</h3>
+          <h3 className="text-2xl font-semibold">Upload a few photos</h3>
         </div>
         <p className="text-sm text-gray-600 text-center">
-          Upload 4+ high-quality selfies: front facing, 1 person in frame, no
-          glasses or hats.
+        Upload a few photos of yourself, and we'll take care of the rest.
         </p>
         <Image
-          src={example}
+          src={resulte}
           alt="AI Headshot example"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />
@@ -36,10 +35,12 @@ export default function ExplainerSection() {
           <h3 className="text-2xl font-semibold">Our AI gets to work</h3>
         </div>
         <p className="text-sm text-gray-600 text-center">
-          The AI magic takes ~20 minutes. You&apos;ll get an email when its ready!
+        <p className="text-sm text-gray-600 text-center">
+        We use cutting-edge technology built by AI researchers <br/>from
+        Meta and Microsoft to create your headshots.        </p>
         </p>
         <Image
-          src={blur}
+          src={Group}
           alt="AI Headshot blur"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />
@@ -51,13 +52,14 @@ export default function ExplainerSection() {
           <div className="text-3xl font-bold text-blue-600 bg-white border-2 border-blue-600 rounded-full w-10 h-10 flex items-center justify-center">
             3
           </div>
-          <h3 className="text-2xl font-semibold">Get amazing headshots</h3>
+          <h3 className="text-2xl font-semibold">Download favourite Headshots</h3>
         </div>
         <p className="text-sm text-gray-600 text-center">
-          Once your model is trained, we&apos;ll give you amazing headshots!
-        </p>
+        You'll receive different backgrounds, poses, and styles to choose<br/>
+        the perfect AI headshot. Ready for all use cases, from personal<br/>
+        to the most professional.        </p>
         <Image
-          src={result}
+          src={exampl}
           alt="AI Headshot result"
           className="rounded-lg object-cover w-full md:w-3/4 lg:w-1/2 mx-auto"
         />

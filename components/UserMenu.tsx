@@ -14,10 +14,17 @@ import ClientSideCredits from "./realtime/ClientSideCredits";
 
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
 
-export default function UserMenu({ user, credits }) {
+interface UserMenuProps {
+  user: {
+    email?: string;
+  };
+  credits: number;
+}
+
+export default function UserMenu({ user, credits }: UserMenuProps) {
   return user ? (
     <>
-      {stripeIsConfigured && <ClientSideCredits creditsRow={credits} />}
+      {stripeIsConfigured && <ClientSideCredits creditsRow={{ credits }} />}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="rounded-full text-sm h-8 w-8">

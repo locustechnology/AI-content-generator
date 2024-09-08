@@ -17,7 +17,7 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let credits = { credits: 0 };
+  let credits = 0;
   if (user) {
     const { data, error } = await supabase
       .from("credits")
@@ -26,7 +26,7 @@ export default async function Navbar() {
       .single();
     
     if (!error && data) {
-      credits = data;
+      credits = data.credits;
     }
   }
 

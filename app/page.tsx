@@ -15,8 +15,8 @@ import dell from "/public/dell.png";
 import shopify from "/public/shopify.png";
 import ebay from "/public/ebay.png";
 import box from "/public/box.png";
-
-
+import Container from "@/components/container";
+import HeroSection from "@/components/Hero";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export default async function Index() {
 
   return (
     <div className="flex flex-col items-center w-full bg-gray-50">
-      <div className="flex flex-col lg:flex-row items-stretch gap-8 p-4 sm:p-8 max-w-7xl w-full">
+      {/* <div className="flex flex-col lg:flex-row items-stretch gap-8 p-4 sm:p-8 max-w-7xl w-full">
         <div className="flex flex-col justify-between space-y-4 lg:w-1/2 w-full">
           <div>
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-4">
@@ -42,7 +42,7 @@ export default async function Index() {
             <p className="text-lg sm:text-xl text-gray-600 mb-6">
               Transform your photos into high-quality, professional<br/> headshots effortlessly.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 "> {/* Reduced mb-6 to mb-4 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {[
                 { icon: star, text: "Pick from 150+ styles" },
                 { icon: watch, text: "Done in less than 1 hour" },
@@ -57,7 +57,7 @@ export default async function Index() {
                 </div>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-2">
               <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full w-full sm:w-1/2">
                 Get Started For Free →
               </Button>
@@ -66,15 +66,15 @@ export default async function Index() {
               </Button>
             </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-700 mb-2 font-bold gap-x-8  mt-4 	">
+          <div className="mt-2">
+            <p className="text-sm text-gray-700 mb-1 font-bold">
               Trusted by 2100 happy customers globally
             </p>
-            <div className="flex flex-wrap items-center gap-4 ">
-              <Image src={dell} alt="Dell" width={80} height={32} className="h-6 w-auto" />
-              <Image src={shopify} alt="Shopify" width={80} height={32} className="h-6 w-auto" />
-              <Image src={ebay} alt="eBay" width={80} height={32} className="h-6 w-auto" />
-              <Image src={box} alt="Box" width={80} height={32} className="h-6 w-auto" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Image src={dell} alt="Dell" width={70} height={28} className="h-4 w-auto" />
+              <Image src={shopify} alt="Shopify" width={70} height={28} className="h-4 w-auto" />
+              <Image src={ebay} alt="eBay" width={70} height={28} className="h-4 w-auto" />
+              <Image src={box} alt="Box" width={70} height={28} className="h-4 w-auto" />
             </div>
           </div>
         </div>
@@ -87,9 +87,11 @@ export default async function Index() {
             className="rounded-lg object-cover w-full h-auto max-h-[600px]"
           />
         </div>
-      </div>
+      </div> */}
+      <HeroSection />
       <ExplainerSection />
       <PricingSection />
+      <Container />
     </div>
   );
 }

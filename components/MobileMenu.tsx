@@ -6,7 +6,12 @@ import { Menu, X } from "lucide-react";
 import NavItems from "./NavItems";
 import UserMenu from "./UserMenu";
 
-export default function MobileMenu({ user, credits }) {
+interface MobileMenuProps {
+  user: any;
+  credits: number;
+}
+
+export default function MobileMenu({ user, credits }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Prevent scrolling when menu is open
@@ -37,7 +42,7 @@ export default function MobileMenu({ user, credits }) {
           />
 
           {/* Menu */}
-          <div className="absolute top-16 left-0 right-0 bg-white shadow-md py-2 z-50">
+          <div className="fixed top-16 left-0 right-0 bottom-0 bg-white shadow-md py-2 z-50 overflow-y-auto">
             <div className="flex flex-col space-y-2 px-4">
               <NavItems />
               <UserMenu user={user} credits={credits} />
