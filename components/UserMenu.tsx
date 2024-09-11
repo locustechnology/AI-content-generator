@@ -24,7 +24,7 @@ interface UserMenuProps {
 export default function UserMenu({ user, credits }: UserMenuProps) {
   return user ? (
     <>
-      {stripeIsConfigured && <ClientSideCredits creditsRow={{ credits }} />}
+      {stripeIsConfigured && <ClientSideCredits creditsRow={{ credits, created_at: "", id: 0, user_id: "" }} />}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="rounded-full text-sm h-8 w-8">

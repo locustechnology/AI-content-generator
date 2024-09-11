@@ -1,22 +1,22 @@
 import React from 'react';
-import { Shield, Users, Headphones, Lock } from 'lucide-react';
+import Image from 'next/image';
 
 interface SecurityFeatureProps {
-  icon: React.ReactNode;
+  imageSrc: string;
   title: string;
   description: string;
 }
 
-const SecurityFeature: React.FC<SecurityFeatureProps> = ({ icon, title, description }) => (
-  <div className="flex items-start space-x-4">
+const SecurityFeature: React.FC<SecurityFeatureProps> = ({ imageSrc, title, description }) => (
+  <div className="flex items-center space-x-4">
     <div className="flex-shrink-0">
-      <div className="p-3 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full">
-        {icon}
+      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center overflow-hidden">
+        <Image src={imageSrc} alt={title} width={40} height={40} className="object-cover" />
       </div>
     </div>
     <div>
       <h3 className="text-lg font-semibold text-white mb-1">{title}</h3>
-      <p className="text-gray-300">{description}</p>
+      <p className="text-gray-300 text-sm">{description}</p>
     </div>
   </div>
 );
@@ -35,30 +35,30 @@ const DataSecuritySection: React.FC = () => {
         
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           <SecurityFeature
-            icon={<Shield className="h-6 w-6 text-white" />}
-            title="Data Protection"
-            description="We never share your data with third parties without your explicit consent."
+            imageSrc="/api/placeholder/40/40"
+            title="WE NEVER SELL YOUR DATA."
+            description="GoStudio.ai will never sell your data to any third party."
           />
           <SecurityFeature
-            icon={<Users className="h-6 w-6 text-white" />}
-            title="User Control"
-            description="You have full control over how your data is used and processed."
+            imageSrc="/api/placeholder/40/40"
+            title="YOU'RE IN CONTROL"
+            description="We will never use your photos to train new AI models without your permission"
           />
           <SecurityFeature
-            icon={<Headphones className="h-6 w-6 text-white" />}
-            title="24/7 Support"
-            description="Our customer support team is always available to assist you."
+            imageSrc="/api/placeholder/40/40"
+            title="LIVE SUPPORT"
+            description="Contact us anytime from to receive assistance from our live customer support."
           />
           <SecurityFeature
-            icon={<Lock className="h-6 w-6 text-white" />}
-            title="Advanced Encryption"
-            description="We use state-of-the-art encryption to protect all sensitive information."
+            imageSrc="/api/placeholder/40/40"
+            title="ADVANCED ENCRYPTION"
+            description="Your data deserves the best protection. We encrypt all sensitive user data."
           />
         </div>
         
         <div className="text-center">
           <button className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold rounded-full hover:from-indigo-600 hover:to-cyan-600 transition duration-300">
-            Create Your Headshot
+            Create Your Headshot →
           </button>
         </div>
       </div>

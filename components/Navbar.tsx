@@ -31,7 +31,7 @@ export default async function Navbar() {
   }
 
   return (
-    <nav className="bg-white shadow-sm rounded-full mx-4 my-2">
+    <nav className="bg-white-100 shadow-sm rounded-full mx-4 my-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center">

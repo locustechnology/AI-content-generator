@@ -15,8 +15,8 @@ const HeroSection = () => {
     <div className="flex flex-col lg:flex-row items-center justify-between gap-8 p-4 sm:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col justify-between lg:w-1/2 w-full">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-4">
-            Professional Headshots<br/> done with AI at your Home
+          <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-4">
+            Professional Headshots done with AI at your Home
           </h1>
           <p className="text-lg text-gray-600 mb-8">
             Transform your photos into high-quality, professional<br className="hidden sm:inline" /> headshots effortlessly.
