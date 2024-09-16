@@ -1,61 +1,149 @@
-import React from 'react';
+'use client'
+import React, { useEffect, useState } from 'react';
+import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Camera, Clock, Shirt, User } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { FaArrowLeft } from 'react-icons/fa';
 
-interface Feature {
-  icon: React.ReactNode;
-  text: string;
-}
+const PaddlePricing = () => {
+  const router = useRouter();
+  const [paddleReady, setPaddleReady] = useState(false);
+  const [billingCountry, setBillingCountry] = useState('US');
+  const [prices, setPrices] = useState({
+    starter: '',
+    basic: '',
+    premium: ''
+  });
 
-interface PricingTierProps {
-  name: string;
-  price: number;
-  features: Feature[];
-  isPopular?: boolean;
-  isBestValue?: boolean;
-}
+  const items = [
+    { priceId: 'pri_01j6w1gr39da9p41rymadfde5q', quantity: 1 }, // Starter
+    { priceId: 'pri_01j6wfjbgevsc47sv22ja6qq60', quantity: 1 }, // Basic
+    { priceId: 'pri_01j6wfs9rsv8xcbgcz9jwtx146', quantity: 1 }  // Premium
+  ];
 
-const PricingTier: React.FC<PricingTierProps> = ({ name, price, features, isPopular, isBestValue }) => (
-  <div className={`bg-white rounded-[2rem] p-8 ${isPopular ? 'shadow-lg' : 'shadow-md'} relative`}>
-    {isPopular && (
-      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
-        82% pick this plan
+  useEffect(() => {
+    const initializePaddle = () => {
+      if (window.Paddle) {
+        try {
+          window.Paddle.Environment.set('sandbox');
+          window.Paddle.Setup({ token: 'test_92774b2a8bc4298034a84cb3f42' });
+          
+          if (window.Paddle.Checkout) {
+            console.log('Paddle is ready');
+            setPaddleReady(true);
+          } else {
+            window.Paddle.on('ready', () => {
+              console.log('Paddle is ready');
+              setPaddleReady(true);
+            });
+          }
+        } catch (error) {
+          console.error('Error initializing Paddle:', error);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      if (window.Paddle) {
+        initializePaddle();
+      } else {
+        document.addEventListener('paddle:loaded', initializePaddle);
+      }
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('paddle:loaded', initializePaddle);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (paddleReady) {
+      getPrices();
+    }
+  }, [paddleReady, billingCountry]);
+
+  const getPrices = () => {
+    const request = {
+      items: items,
+      address: {
+        countryCode: billingCountry
+      }
+    };
+
+    window.Paddle.PricePreview(request)
+      .then((result) => {
+        console.log(result);
+        const lineItems = result.data.details.lineItems;
+        const newPrices = { ...prices };
+        lineItems.forEach((item) => {
+          if (item.price.id === 'pri_01j6w1gr39da9p41rymadfde5q') newPrices.starter = item.formattedTotals.total;
+          if (item.price.id === 'pri_01j6wfjbgevsc47sv22ja6qq60') newPrices.basic = item.formattedTotals.total;
+          if (item.price.id === 'pri_01j6wfs9rsv8xcbgcz9jwtx146') newPrices.premium = item.formattedTotals.total;
+        });
+        setPrices(newPrices);
+      })
+      .catch((error) => {
+        console.error('Error fetching prices:', error);
+      });
+  };
+
+  const handleCountryChange = (e) => {
+    setBillingCountry(e.target.value);
+  };
+
+  const handleCheckout = (priceId) => {
+    router.push(`/checkouts/new?id=${priceId}`);
+  };
+
+  const PricingTier = ({ name, price, features, isPopular, isBestValue, priceId }) => (
+    <div className={`bg-white rounded-[2rem] p-8 ${isPopular ? 'shadow-lg' : 'shadow-md'} relative`}>
+      {isPopular && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
+          82% pick this plan
+        </div>
+      )}
+      {isBestValue && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-100 text-purple-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
+          Best Value
+        </div>
+      )}
+      <h3 className={`text-xl font-bold text-center mb-4 ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-blue-600'}`}>{name}</h3>
+      <div className="text-center mb-2">
+        <span className={`text-4xl font-bold ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-gray-900'}`}>{price}</span>
+        <span className={`text-lg ${isPopular ? 'text-blue-400' : 'text-gray-500'}`}>/ month</span>
       </div>
-    )}
-    {isBestValue && (
-      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-100 text-purple-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
-        Best Value
-      </div>
-    )}
-    <h3 className={`text-xl font-bold text-center mb-4 ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-blue-600'}`}>{name}</h3>
-    <div className="text-center mb-2">
-      <span className={`text-4xl font-bold ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-gray-900'}`}>${price}</span>
-      <span className={`text-lg ${isPopular ? 'text-blue-400' : 'text-gray-500'}`}>/ month</span>
+      <p className="text-gray-500 text-center mb-6 text-sm">billed monthly</p>
+      <ul className="space-y-4 mb-8">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-center text-gray-700">
+            {feature.icon}
+            <span className="ml-2">{feature.text}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        className={`w-full py-3 px-4 rounded-full flex items-center justify-center ${
+          isPopular ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+        }`}
+        onClick={() => handleCheckout(priceId)}
+        disabled={!paddleReady}
+      >
+        {paddleReady ? 'Start Free Trial' : 'Loading...'}
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </button>
+      <p className="text-gray-500 text-center mt-4 text-sm">No credit card required</p>
     </div>
-    <p className="text-gray-500 text-center mb-6 text-sm">billed monthly</p>
-    <ul className="space-y-4 mb-8">
-      {features.map((feature, index) => (
-        <li key={index} className="flex items-center text-gray-700">
-          {feature.icon}
-          <span className="ml-2">{feature.text}</span>
-        </li>
-      ))}
-    </ul>
-    <button
-      className={`w-full py-3 px-4 rounded-full flex items-center justify-center ${
-        isPopular ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-      }`}
-    >
-      Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-    </button>
-    <p className="text-gray-500 text-center mt-4 text-sm">No credit card required</p>
-  </div>
-);
+  );
 
-const PricingPage: React.FC = () => {
-  const tiers: PricingTierProps[] = [
+  const tiers = [
     {
       name: "STARTER",
-      price: 35,
+      price: prices.starter,
+      priceId: 'pri_01j6w1gr39da9p41rymadfde5q',
       features: [
         { icon: <Camera className="h-5 w-5 text-gray-400" />, text: "20 high-quality headshots" },
         { icon: <Clock className="h-5 w-5 text-gray-400" />, text: "2-hour processing time" },
@@ -64,8 +152,9 @@ const PricingPage: React.FC = () => {
       ],
     },
     {
-      name: "STANDARD",
-      price: 45,
+      name: "BASIC",
+      price: prices.basic,
+      priceId: 'pri_01j6wfjbgevsc47sv22ja6qq60',
       features: [
         { icon: <Camera className="h-5 w-5 text-blue-400" />, text: "60 high-quality headshots" },
         { icon: <Clock className="h-5 w-5 text-blue-400" />, text: "1-hour processing time" },
@@ -76,7 +165,8 @@ const PricingPage: React.FC = () => {
     },
     {
       name: "PREMIUM",
-      price: 75,
+      price: prices.premium,
+      priceId: 'pri_01j6wfs9rsv8xcbgcz9jwtx146',
       features: [
         { icon: <Camera className="h-5 w-5 text-purple-400" />, text: "100 high-quality headshots" },
         { icon: <Clock className="h-5 w-5 text-purple-400" />, text: "30-min processing time" },
@@ -88,22 +178,50 @@ const PricingPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 rounded-[2rem] my-16">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
-          Premium quality without <br/> premium pricing.
-        </h2>
-        <p className="text-xl text-center text-gray-600 mb-12 max-w-3xl mx-auto">
-          Save hundreds compared to a photo shoot. Customize your AI professional headshot <br/>with manual edits or get a redo if the initial uploads were wrong.
-        </p>
-        <div className="grid md:grid-cols-3 gap-8">
-          {tiers.map((tier, index) => (
-            <PricingTier key={index} {...tier} />
-          ))}
+    <>
+      <Script 
+        src="https://cdn.paddle.com/paddle/v2/paddle.js"
+        strategy="lazyOnload"
+      />
+      <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 rounded-[2rem] my-16">
+        <div className="max-w-7xl mx-auto">
+          <Link href="/overview/models/train" className="text-sm w-fit mb-8 block">
+            <Button variant="outline">
+              <FaArrowLeft className="mr-2" />
+              Go Back
+            </Button>
+          </Link>
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
+            Premium quality without <br/> premium pricing.
+          </h2>
+          <p className="text-xl text-center text-gray-600 mb-12 max-w-3xl mx-auto">
+            Save hundreds compared to a photo shoot. Customize your AI professional headshot <br/>with manual edits or get a redo if the initial uploads were wrong.
+          </p>
+          
+          <div className="mb-8">
+            <label htmlFor="country" className="block mb-2">Select your billing country:</label>
+            <select 
+              id="country" 
+              value={billingCountry} 
+              onChange={handleCountryChange}
+              className="border rounded p-2"
+            >
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="IN">India</option>
+              {/* Add more countries as needed */}
+            </select>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {tiers.map((tier, index) => (
+              <PricingTier key={index} {...tier} />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
-export default PricingPage;
+export default PaddlePricing;

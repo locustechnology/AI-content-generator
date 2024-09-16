@@ -1,8 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
+import { StaticImageData } from 'next/image';
+import Borderone from "/public/Borderone.png";
+import Bordertwo from "/public/Bordertwo.png";
+import Borderthird from "/public/Borderthird.png";
+import Borderfour from "/public/Borderfour.png";
 
 interface SecurityFeatureProps {
-  imageSrc: string;
+  imageSrc: string | StaticImageData;
   title: string;
   description: string;
 }
@@ -35,22 +40,22 @@ const DataSecuritySection: React.FC = () => {
         
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           <SecurityFeature
-            imageSrc="/api/placeholder/40/40"
+            imageSrc={Borderone}
             title="WE NEVER SELL YOUR DATA."
             description="GoStudio.ai will never sell your data to any third party."
           />
           <SecurityFeature
-            imageSrc="/api/placeholder/40/40"
+            imageSrc={Bordertwo}
             title="YOU'RE IN CONTROL"
             description="We will never use your photos to train new AI models without your permission"
           />
           <SecurityFeature
-            imageSrc="/api/placeholder/40/40"
+            imageSrc={Borderthird}
             title="LIVE SUPPORT"
             description="Contact us anytime from to receive assistance from our live customer support."
           />
           <SecurityFeature
-            imageSrc="/api/placeholder/40/40"
+            imageSrc={Borderfour}
             title="ADVANCED ENCRYPTION"
             description="Your data deserves the best protection. We encrypt all sensitive user data."
           />

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 const PaddlePricing = () => {
   const router = useRouter();
   const [paddleReady, setPaddleReady] = useState(false);
-  const [billingCountry, setBillingCountry] = useState('US');
   const [prices, setPrices] = useState({
     starter: '',
     basic: '',
@@ -27,12 +26,10 @@ const PaddlePricing = () => {
           window.Paddle.Environment.set('sandbox');
           window.Paddle.Setup({ token: 'test_92774b2a8bc4298034a84cb3f42' });
           
-          // Check if Paddle is already ready
           if (window.Paddle.Checkout) {
             console.log('Paddle is ready');
             setPaddleReady(true);
           } else {
-            // If not ready, set up a listener for the 'ready' event
             window.Paddle.on('ready', () => {
               console.log('Paddle is ready');
               setPaddleReady(true);
@@ -63,14 +60,11 @@ const PaddlePricing = () => {
     if (paddleReady) {
       getPrices();
     }
-  }, [paddleReady, billingCountry]);
+  }, [paddleReady]);
 
   const getPrices = () => {
     const request = {
-      items: items,
-      address: {
-        countryCode: billingCountry
-      }
+      items: items
     };
 
     window.Paddle.PricePreview(request)
@@ -90,12 +84,21 @@ const PaddlePricing = () => {
       });
   };
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBillingCountry(e.target.value);
-  };
-
   const handleCheckout = (priceId: string) => {
-    router.push(`/checkouts/new?id=${priceId}`);
+    if (window.Paddle && paddleReady) {
+      window.Paddle.Checkout.open({
+        items: [{ priceId, quantity: 1 }],
+        successCallback: (data: any) => {
+          console.log('Payment successful:', data);
+          router.push('/overview/models/train?step=image-upload');
+        },
+        closeCallback: (reason: any) => {
+          console.log('Checkout closed. Reason:', reason);
+        }
+      });
+    } else {
+      console.error('Paddle is not ready');
+    }
   };
 
   return (
@@ -106,21 +109,6 @@ const PaddlePricing = () => {
       />
       <div className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold text-center mb-8">Choose Your Plan</h2>
-        
-        <div className="mb-8">
-          <label htmlFor="country" className="block mb-2">Select your billing country:</label>
-          <select 
-            id="country" 
-            value={billingCountry} 
-            onChange={handleCountryChange}
-            className="border rounded p-2"
-          >
-            <option value="US">United States</option>
-            <option value="GB">United Kingdom</option>
-            <option value="IN">India</option>
-            {/* Add more countries as needed */}
-          </select>
-        </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Starter Plan */}
