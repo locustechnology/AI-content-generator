@@ -1,6 +1,6 @@
 'use client'
 
-import { FC, useState } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +11,21 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { FcGoogle } from "react-icons/fc";
 import logo from "/public/98.png";
 import loginfram from "/public/credits/loginfram.png"
+import { WaitingForMagicLink } from './WaitingForMagicLink';
 
 type Inputs = {
   email: string;
 };
 
 interface LoginPageProps {
-  params: {};
-  searchParams: { [key: string]: string | string[] | undefined };
+  host?: string | null;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
   const supabase = createClientComponentClient<Database>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWaiting, setShowWaiting] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -35,13 +37,23 @@ const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsSubmitting(true);
     try {
-      // Handle form submission logic here
+      const { error } = await supabase.auth.signInWithOtp({
+        email: data.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      if (error) throw error;
+
+      setShowWaiting(true);
       toast({
         title: "Email sent",
         description: "Check your inbox for a magic link to sign in.",
         duration: 5000,
       });
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Something went wrong",
         variant: "destructive",
@@ -63,6 +75,7 @@ const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
       });
       if (error) throw error;
     } catch (error) {
+      console.error('Google sign-in error:', error);
       toast({
         title: "Google sign-in failed",
         variant: "destructive",
@@ -71,6 +84,10 @@ const LoginPage: FC<LoginPageProps> = ({ searchParams }) => {
       });
     }
   };
+
+  if (showWaiting) {
+    return <WaitingForMagicLink toggleState={() => setShowWaiting(false)} />;
+  }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">

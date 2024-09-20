@@ -10,7 +10,7 @@ import GetCreditsPage from '@/app/get-credits/page';
 const TrainFlowComponent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const step = searchParams.get('step');
+  const step = searchParams.get('step') || 'gender';
 
   const navigateToNextStep = (nextStep: string) => {
     router.push(`/overview/models/train?step=${nextStep}`);

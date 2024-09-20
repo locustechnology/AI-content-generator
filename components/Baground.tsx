@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Baground from "/public/Baground.png";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Background {
   id: string;
@@ -36,9 +42,36 @@ const BackgroundSelectionPage: React.FC<BackgroundSelectionPageProps> = ({ onCon
     );
   };
 
-  const handleContinue = () => {
+  const insertUserPreferences = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        style_ids: selectedBackgrounds,
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) {
+      console.error('Error inserting user preferences:', error);
+    } else {
+      console.log('User preferences inserted successfully:', data);
+    }
+  };
+
+  const handleContinue = async () => {
     if (canContinue) {
       console.log("Continuing with selected backgrounds:", selectedBackgrounds);
+      
+      // Insert user preferences into the database
+      await insertUserPreferences();
+      
       // Navigate to the next step (eyes-color)
       onContinue('eyes-color');
     }
