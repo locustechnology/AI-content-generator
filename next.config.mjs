@@ -11,7 +11,11 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://sandbox-buy.paddle.com https://buy.paddle.com http://localhost:3000;",
+            value: "frame-ancestors 'self' http://localhost:3000 https://buy.paddle.com https://checkout-service.paddle.com;",
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
         ],
       },

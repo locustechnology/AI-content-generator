@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { FcGoogle } from "react-icons/fc";
 import logo from "/public/98.png";
 import loginfram from "/public/credits/loginfram.png"
 import { WaitingForMagicLink } from './WaitingForMagicLink';
+import { useRouter } from 'next/navigation';
 
 type Inputs = {
   email: string;
@@ -27,6 +28,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWaiting, setShowWaiting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const {
     register,
@@ -44,8 +46,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
         },
       });
       
-      if (error) throw error;
-
+      if (error) {
+        console.error('Supabase sign-in error:', error.message);
+        throw error;
+      }
+  
       setShowWaiting(true);
       toast({
         title: "Email sent",
@@ -85,12 +90,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
     }
   };
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/dashboard');
+      }
+    };
+
+    checkSession();
+  }, [router, supabase.auth]);
+
   if (showWaiting) {
     return <WaitingForMagicLink toggleState={() => setShowWaiting(false)} />;
   }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
+      {/* Left side with image */}
       <div className="w-full lg:w-1/2 relative">
         <div className="aspect-[4/3] lg:aspect-auto lg:h-full relative">
           <Image 
@@ -108,6 +125,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ host, searchParams }) => {
         </div>
       </div>
       
+      {/* Right side with login form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
         <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 h-[600px] flex flex-col justify-between">
           <div>

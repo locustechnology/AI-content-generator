@@ -1,227 +1,195 @@
-'use client'
-import React, { useEffect, useState } from 'react';
-import Script from 'next/script';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Camera, Clock, Shirt, User } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { FaArrowLeft } from 'react-icons/fa';
+import { User } from '@supabase/supabase-js';
+import Script from 'next/script';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from "@/app/types/supabase";
 
-const PaddlePricing = () => {
+interface Plan {
+  id: string;
+  name: string;
+  price_in_usd: number;
+  total_credits: number;
+  max_trainings: number;
+  max_generations: number;
+  max_edits: number;
+  paddle_product_id: string;
+  paddle_price_id: string;
+}
+
+interface ClientPricingSectionProps {
+  initialPlans: Plan[];
+  initialUser: User | null;
+}
+
+declare global {
+  interface Window {
+    Paddle: any;
+  }
+}
+
+const ClientPricingSection: React.FC<ClientPricingSectionProps> = ({ initialPlans, initialUser }) => {
   const router = useRouter();
-  const [paddleReady, setPaddleReady] = useState(false);
-  const [billingCountry, setBillingCountry] = useState('US');
-  const [prices, setPrices] = useState({
-    starter: '',
-    basic: '',
-    premium: ''
-  });
+  const [plans, setPlans] = useState<Plan[]>(initialPlans);
+  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [loading, setLoading] = useState(false);
+  const [paddleLoaded, setPaddleLoaded] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [currentPriceId, setCurrentPriceId] = useState<string | null>(null);
 
-  const items = [
-    { priceId: 'pri_01j6w1gr39da9p41rymadfde5q', quantity: 1 }, // Starter
-    { priceId: 'pri_01j6wfjbgevsc47sv22ja6qq60', quantity: 1 }, // Basic
-    { priceId: 'pri_01j6wfs9rsv8xcbgcz9jwtx146', quantity: 1 }  // Premium
-  ];
+  const supabase = createClientComponentClient<Database>();
 
   useEffect(() => {
-    const initializePaddle = () => {
-      if (window.Paddle) {
-        try {
-          window.Paddle.Environment.set('sandbox');
-          window.Paddle.Setup({ token: 'test_92774b2a8bc4298034a84cb3f42' });
-          
-          if (window.Paddle.Checkout) {
-            console.log('Paddle is ready');
-            setPaddleReady(true);
-          } else {
-            window.Paddle.on('ready', () => {
-              console.log('Paddle is ready');
-              setPaddleReady(true);
-            });
-          }
-        } catch (error) {
-          console.error('Error initializing Paddle:', error);
-        }
-      }
-    };
+    if (initialUser) {
+      setUser(initialUser);
+    }
+  }, [initialUser]);
 
-    if (typeof window !== 'undefined') {
-      if (window.Paddle) {
-        initializePaddle();
-      } else {
-        document.addEventListener('paddle:loaded', initializePaddle);
-      }
+  const handleCheckout = async (plan: Plan) => {
+    console.log('Attempting checkout for plan:', plan);
+
+    if (!user) {
+      setError('Please log in to make a purchase.');
+      return;
     }
 
-    return () => {
-      if (typeof window !== 'undefined') {
-        document.removeEventListener('paddle:loaded', initializePaddle);
-      }
-    };
-  }, []);
+    if (window.Paddle && paddleLoaded) {
+      setCurrentPriceId(plan.paddle_price_id);
+      setIsCheckoutOpen(true);
+    } else {
+      setError('Payment system is not ready. Please try again later.');
+    }
+  };
 
   useEffect(() => {
-    if (paddleReady) {
-      getPrices();
+    if (isCheckoutOpen) {
+      openCheckout();
     }
-  }, [paddleReady, billingCountry]);
+  }, [isCheckoutOpen]);
 
-  const getPrices = () => {
-    const request = {
-      items: items,
-      address: {
-        countryCode: billingCountry
-      }
-    };
+  const openCheckout = () => {
+    if (!currentPriceId || !user) return;
 
-    window.Paddle.PricePreview(request)
-      .then((result) => {
-        console.log(result);
-        const lineItems = result.data.details.lineItems;
-        const newPrices = { ...prices };
-        lineItems.forEach((item) => {
-          if (item.price.id === 'pri_01j6w1gr39da9p41rymadfde5q') newPrices.starter = item.formattedTotals.total;
-          if (item.price.id === 'pri_01j6wfjbgevsc47sv22ja6qq60') newPrices.basic = item.formattedTotals.total;
-          if (item.price.id === 'pri_01j6wfs9rsv8xcbgcz9jwtx146') newPrices.premium = item.formattedTotals.total;
-        });
-        setPrices(newPrices);
-      })
-      .catch((error) => {
-        console.error('Error fetching prices:', error);
+    try {
+      window.Paddle.Checkout.open({
+        settings: {
+          displayMode: 'overlay',
+          theme: 'light',
+        },
+        items: [{ priceId: currentPriceId, quantity: 1 }],
+        customer: { email: user.email },
+        successCallback: handleSuccessfulPurchase,
+        closeCallback: handleCloseCheckout,
       });
+    } catch (error: any) {
+      setError(`Failed to open checkout: ${error.message || 'Unknown error'}`);
+      setIsCheckoutOpen(false);
+    }
   };
 
-  const handleCountryChange = (e) => {
-    setBillingCountry(e.target.value);
+  const handleCloseCheckout = () => {
+    setIsCheckoutOpen(false);
+    setCurrentPriceId(null);
   };
 
-  const handleCheckout = (priceId) => {
-    router.push(`/checkouts/new?id=${priceId}`);
+  const handleSuccessfulPurchase = async (data: any) => {
+    try {
+      console.log('Successful purchase data:', data);
+      const webhookData = {
+        alert_name: 'subscription_created',
+        user_id: user?.id,
+        subscription_plan_id: data.product.id,
+        subscription_id: data.subscription.id,
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        paddleUnitAmount: data.checkout.total,
+      };
+      console.log('Sending webhook data:', webhookData);
+      
+      const response = await fetch('/astria/paddle-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookData),
+      });
+  
+      console.log('Webhook response status:', response.status);
+      const responseData = await response.json();
+      console.log('Webhook response data:', responseData);
+  
+      if (!response.ok) {
+        throw new Error(`Failed to process subscription: ${responseData.message}`);
+      }
+  
+      console.log('Subscription processed:', responseData);
+  
+      handleCloseCheckout();
+      router.push('/overview/models/train?step=image-upload');
+    } catch (error: any) {
+      console.error('Error processing subscription:', error);
+      setError('Failed to process subscription. Please contact support.');
+    }
   };
 
-  const PricingTier = ({ name, price, features, isPopular, isBestValue, priceId }) => (
-    <div className={`bg-white rounded-[2rem] p-8 ${isPopular ? 'shadow-lg' : 'shadow-md'} relative`}>
-      {isPopular && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
-          82% pick this plan
-        </div>
-      )}
-      {isBestValue && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-100 text-purple-600 px-4 py-1 rounded-full text-sm font-medium whitespace-nowrap">
-          Best Value
-        </div>
-      )}
-      <h3 className={`text-xl font-bold text-center mb-4 ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-blue-600'}`}>{name}</h3>
-      <div className="text-center mb-2">
-        <span className={`text-4xl font-bold ${isPopular ? 'text-blue-600' : name === 'PREMIUM' ? 'text-purple-600' : 'text-gray-900'}`}>{price}</span>
-        <span className={`text-lg ${isPopular ? 'text-blue-400' : 'text-gray-500'}`}>/ month</span>
-      </div>
-      <p className="text-gray-500 text-center mb-6 text-sm">billed monthly</p>
-      <ul className="space-y-4 mb-8">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center text-gray-700">
-            {feature.icon}
-            <span className="ml-2">{feature.text}</span>
-          </li>
-        ))}
-      </ul>
-      <button
-        className={`w-full py-3 px-4 rounded-full flex items-center justify-center ${
-          isPopular ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-        }`}
-        onClick={() => handleCheckout(priceId)}
-        disabled={!paddleReady}
-      >
-        {paddleReady ? 'Start Free Trial' : 'Loading...'}
-        <ArrowRight className="ml-2 h-4 w-4" />
-      </button>
-      <p className="text-gray-500 text-center mt-4 text-sm">No credit card required</p>
-    </div>
-  );
-
-  const tiers = [
-    {
-      name: "STARTER",
-      price: prices.starter,
-      priceId: 'pri_01j6w1gr39da9p41rymadfde5q',
-      features: [
-        { icon: <Camera className="h-5 w-5 text-gray-400" />, text: "20 high-quality headshots" },
-        { icon: <Clock className="h-5 w-5 text-gray-400" />, text: "2-hour processing time" },
-        { icon: <Shirt className="h-5 w-5 text-gray-400" />, text: "5 outfits and backgrounds" },
-        { icon: <User className="h-5 w-5 text-gray-400" />, text: "5 poses" },
-      ],
-    },
-    {
-      name: "BASIC",
-      price: prices.basic,
-      priceId: 'pri_01j6wfjbgevsc47sv22ja6qq60',
-      features: [
-        { icon: <Camera className="h-5 w-5 text-blue-400" />, text: "60 high-quality headshots" },
-        { icon: <Clock className="h-5 w-5 text-blue-400" />, text: "1-hour processing time" },
-        { icon: <Shirt className="h-5 w-5 text-blue-400" />, text: "20 outfits and backgrounds" },
-        { icon: <User className="h-5 w-5 text-blue-400" />, text: "20 poses" },
-      ],
-      isPopular: true,
-    },
-    {
-      name: "PREMIUM",
-      price: prices.premium,
-      priceId: 'pri_01j6wfs9rsv8xcbgcz9jwtx146',
-      features: [
-        { icon: <Camera className="h-5 w-5 text-purple-400" />, text: "100 high-quality headshots" },
-        { icon: <Clock className="h-5 w-5 text-purple-400" />, text: "30-min processing time" },
-        { icon: <Shirt className="h-5 w-5 text-purple-400" />, text: "40 outfits and backgrounds" },
-        { icon: <User className="h-5 w-5 text-purple-400" />, text: "40 poses" },
-      ],
-      isBestValue: true,
-    },
-  ];
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
-      <Script 
+      <Script
         src="https://cdn.paddle.com/paddle/v2/paddle.js"
         strategy="lazyOnload"
+        onLoad={() => {
+          window.Paddle.Environment.set('sandbox');
+          window.Paddle.Setup({
+            token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN as string,
+            eventCallback: function(data: any) {
+              console.log('Paddle event:', data);
+            }
+          });
+          setPaddleLoaded(true);
+        }}
+        onError={(e) => {
+          setError('Failed to load payment system. Please try again later.');
+        }}
       />
-      <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 rounded-[2rem] my-16">
-        <div className="max-w-7xl mx-auto">
-          <Link href="/overview/models/train" className="text-sm w-fit mb-8 block">
-            <Button variant="outline">
-              <FaArrowLeft className="mr-2" />
-              Go Back
-            </Button>
-          </Link>
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
-            Premium quality without <br/> premium pricing.
-          </h2>
-          <p className="text-xl text-center text-gray-600 mb-12 max-w-3xl mx-auto">
-            Save hundreds compared to a photo shoot. Customize your AI professional headshot <br/>with manual edits or get a redo if the initial uploads were wrong.
-          </p>
-          
-          <div className="mb-8">
-            <label htmlFor="country" className="block mb-2">Select your billing country:</label>
-            <select 
-              id="country" 
-              value={billingCountry} 
-              onChange={handleCountryChange}
-              className="border rounded p-2"
-            >
-              <option value="US">United States</option>
-              <option value="GB">United Kingdom</option>
-              <option value="IN">India</option>
-              {/* Add more countries as needed */}
-            </select>
+      <div className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold text-center mb-8">Choose Your Plan</h2>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {tiers.map((tier, index) => (
-              <PricingTier key={index} {...tier} />
-            ))}
-          </div>
+        )}
+        
+        <div className="grid md:grid-cols-3 gap-8 mb-8">
+        {plans?.map((plan) => (
+            <div key={plan.id} className="border rounded-lg p-6 text-center">
+              <h3 className="text-xl font-semibold mb-4">{plan.name}</h3>
+              <p className="text-3xl font-bold mb-4">${plan.price_in_usd.toFixed(2)}</p>
+              <ul className="text-left mb-6">
+                <li>✅ {plan.total_credits} total credits</li>
+                <li>✅ {plan.max_trainings} training sessions</li>
+                <li>✅ {plan.max_generations} generations</li>
+                <li>✅ {plan.max_edits} edits</li>
+              </ul>
+              <button 
+                className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition"
+                onClick={() => handleCheckout(plan)} 
+                disabled={!user || !paddleLoaded}
+              >
+                {user ? `Choose ${plan.name}` : 'Log in to Purchase'}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </>
   );
 };
 
-export default PaddlePricing;
+export default ClientPricingSection;

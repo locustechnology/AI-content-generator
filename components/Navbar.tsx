@@ -7,8 +7,12 @@ import NavItems from "./NavItems";
 import MobileMenu from "./MobileMenu";
 import UserMenu from "./UserMenu";
 import logo from "/public/98.png";
+import ClientSideCredits from "./realtime/ClientSideCredits";
 
 export const dynamic = "force-dynamic";
+
+const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
+export const revalidate = 0;
 
 export default async function Navbar() {
   const supabase = createServerComponentClient<Database>({ cookies });
@@ -17,18 +21,11 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let credits = 0;
-  if (user) {
-    const { data, error } = await supabase
-      .from("credits")
-      .select("credits")
-      .eq("user_id", user.id)
-      .single();
-    
-    if (!error && data) {
-      credits = data.credits;
-    }
-  }
+  
+  const {
+    data: credits,
+  } = await supabase.from("credits").select("*").eq("user_id", user?.id ?? '').single()
+
 
   return (
     <nav className="bg-white-100 shadow-sm rounded-full mx-4 my-2">
@@ -44,11 +41,11 @@ export default async function Navbar() {
           {user ? (
             <>
               <div className="hidden md:flex items-center space-x-4">
-                <NavItems />
-                <UserMenu user={user} credits={credits} />
+              <NavItems />
+              <UserMenu user={user} credits={credits?.credits ?? 0} />
               </div>
-              <MobileMenu user={user} credits={credits} />
-            </>
+            <MobileMenu user={user} credits={credits?.credits ?? 0} />
+              </>
           ) : (
             <Link href="/login">
               <button className="  font-bold py-2 px-4 rounded">

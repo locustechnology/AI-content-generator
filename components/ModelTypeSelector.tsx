@@ -18,7 +18,7 @@ type ModelType = 'female' | 'male' | 'kids';
 interface ModelOption {
   value: ModelType;
   label: string;
-  src: any;  // Using 'any' to avoid potential StaticImageData issues
+  src: any;
 }
 
 const modelTypes: ModelOption[] = [
@@ -28,7 +28,7 @@ const modelTypes: ModelOption[] = [
 ];
 
 interface ModelTypeSelectorProps {
-  onSelectModel: () => void;
+  onSelectModel: (modelType: ModelType) => void;
 }
 
 export const ModelTypeSelector: React.FC<ModelTypeSelectorProps> = ({ onSelectModel }) => {
@@ -44,7 +44,7 @@ export const ModelTypeSelector: React.FC<ModelTypeSelectorProps> = ({ onSelectMo
 
   const handleSelectModel = useCallback((value: ModelType) => {
     setSelectedModel(value);
-    setError(null); // Clear any previous errors when a new selection is made
+    setError(null);
   }, []);
 
   const handleContinue = useCallback(async () => {
@@ -57,21 +57,21 @@ export const ModelTypeSelector: React.FC<ModelTypeSelectorProps> = ({ onSelectMo
           return;
         }
 
-        // Insert a new record into the models table
+
         const { data, error } = await supabase
           .from('models')
           .insert({
-            name: `${user.id}_${selectedModel}`, // Unique name combining user ID and model type
+            name: `${user.id}_${selectedModel}`,
             type: selectedModel,
             user_id: user.id,
-            status: 'processing', // Assuming initial status is 'processing'
-            meta_data: JSON.stringify({ selectedVia: 'ModelTypeSelector' }) // Optional: Add any additional metadata
+            status: 'processing',
+            meta_data: JSON.stringify({ selectedVia: 'ModelTypeSelector' })
           });
 
         if (error) throw error;
         console.log('New model inserted:', data);
 
-        onSelectModel(); // Call the prop function to navigate to the next step
+        onSelectModel(selectedModel);
       } catch (error) {
         console.error('Error saving model:', error);
         setError('Failed to save your selection. Please try again.');
@@ -91,7 +91,7 @@ export const ModelTypeSelector: React.FC<ModelTypeSelectorProps> = ({ onSelectMo
   `, [selectedModel]);
 
   if (!isClient) {
-    return <div>Loading...</div>; // Show a loading indicator
+    return <div>Loading...</div>;
   }
 
   return (
