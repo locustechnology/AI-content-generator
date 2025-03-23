@@ -3,9 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
+import Footer from "@/components/Footer";
 
 export const metadata = {
   title: "Headshots AI",
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: any) {
           <main className="flex flex-1 flex-col items-center py-16">
           {children}
         </main>
-        <Footer />
+       
         <Toaster />
         <Analytics />
         </body>

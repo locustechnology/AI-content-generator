@@ -1,4 +1,4 @@
-import { Database } from "@/app/types/supabase"; 
+import { Database } from "@/app/types/supabase";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import axios from "axios";
 import { cookies } from "next/headers";
@@ -6,10 +6,9 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// Environment variables
 const astriaApiKey = process.env.ASTRIA_API_KEY;
 const astriaTestModeIsOn = process.env.ASTRIA_TEST_MODE === "true";
-// For local development, recommend using an Ngrok tunnel for the domain
-
 const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
 const stripeIsConfigured = process.env.NEXT_PUBLIC_STRIPE_IS_ENABLED === "true";
 
@@ -23,167 +22,103 @@ export async function POST(request: Request) {
   const type = payload.type;
   const name = payload.name;
 
+  // Hardcoded pack id 260 for corporate headshots from the gallery
+  const galleryPackId = Number(process.env.ASTRIA_GALLERY_PACK_ID) || 260;
   const supabase = createRouteHandlerClient<Database>({ cookies });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized",
-      },
-      { status: 401 }
-    );
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   if (!astriaApiKey) {
-    return NextResponse.json(
-      {
-        message:
-          "Missing API Key: Add your Astria API Key to generate headshots",
-      },
-      {
-        status: 500,
-      }
-    );
+    throw new Error("Missing API Key: Add your Astria API Key to generate headshots");
   }
 
+  // Validate number of sample images
   if (images?.length < 4) {
-    return NextResponse.json(
-      {
-        message: "Upload at least 4 sample images",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Upload at least 4 sample images" }, { status: 400 });
   }
 
-  let _credits = null;
+  // Fetch user credit balance
+  const { data: userCreditBalance, error: userDataError } = await supabase
+    .rpc('get_user_credit_balance', { user_id: user.id });
 
-  console.log({ stripeIsConfigured });
-
-  // Check if the user already has credits in the database
-  const { error: creditError, data: credits } = await supabase
-    .from("credits")
-    .select("credits")
-    .eq("user_id", user.id);
-
-  if (creditError) {
-    console.error({ creditError });
-    return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
-      { status: 500 }
-    );
+  if (userDataError) {
+    console.error({ userDataError });
+    return NextResponse.json({ message: "Error checking credits" }, { status: 500 });
   }
 
-  // If no credits are found, give the user 10 free credits
-  if (credits.length === 0) {
-    const { error: errorCreatingCredits } = await supabase
-      .from("credits")
-      .insert({
-        user_id: user.id,
-        credits: 10,
-      });
+  if (typeof userCreditBalance !== 'number') {
+    return NextResponse.json({ message: "Error retrieving user credit balance" }, { status: 500 });
+  }
 
-    if (errorCreatingCredits) {
-      console.error({ errorCreatingCredits });
-      return NextResponse.json(
-        {
-          message: "Something went wrong!",
-        },
-        { status: 500 }
-      );
-    }
-
-    // Re-fetch the credits after initializing
-    const { data: newCredits } = await supabase
-      .from("credits")
-      .select("credits")
-      .eq("user_id", user.id);
-
-    _credits = newCredits;
-  } else if (credits[0]?.credits < 1) {
-    return NextResponse.json(
-      {
-        message:
-          "Not enough credits, please purchase some credits and try again.",
-      },
-      { status: 500 }
-    );
-  } else {
-    _credits = credits;
+  // Calculate required credits: 50 each for 5 prompts
+  const requiredCredits = 5 * 50;
+  if (userCreditBalance < requiredCredits) {
+    return NextResponse.json({ message: `Not enough credits. You need ${requiredCredits} credits, but you have ${userCreditBalance}.` }, { status: 400 });
   }
 
   try {
+    // Prepare webhook URLs
     const trainWebhook = `https://${process.env.VERCEL_URL}/astria/train-webhook`;
-    const trainWenhookWithParams = `${trainWebhook}?user_id=${user.id}&webhook_secret=${appWebhookSecret}`;
-
+    const trainWebhookWithParams = `${trainWebhook}?user_id=${user.id}&webhook_secret=${appWebhookSecret}`;
     const promptWebhook = `https://${process.env.VERCEL_URL}/astria/prompt-webhook`;
     const promptWebhookWithParams = `${promptWebhook}?user_id=${user.id}&webhook_secret=${appWebhookSecret}`;
 
     const API_KEY = astriaApiKey;
     const DOMAIN = "https://api.astria.ai";
 
+    // Prepare request body for Astria API
     const body = {
       tune: {
         title: name,
-        base_tune_id: 690204,
         name: type,
-        branch: astriaTestModeIsOn ? "fast" : "sd15",
-        token: "ohwx",
+        callback: trainWebhookWithParams,
+        prompt_attributes: {
+          callback: promptWebhookWithParams
+        },
         image_urls: images,
-        callback: trainWenhookWithParams,
-        prompts_attributes: [
-          {
-            text: `portrait of ohwx ${type} wearing a business suit, professional photo, white background, Amazing Details, Best Quality, Masterpiece, dramatic lighting highly detailed, analog photo, overglaze, 80mm Sigma f/1.4 or any ZEISS lens`,
-            callback: promptWebhookWithParams,
-            num_images: 8,
-          },
-          {
-            text: `8k close up linkedin profile picture of ohwx ${type}, professional jack suite, professional headshots, photo-realistic, 4k, high-resolution image, workplace settings, upper body, modern outfit, professional suit, business, blurred background, glass building, office window`,
-            callback: promptWebhookWithParams,
-            num_images: 8,
-          },
-        ],
+        branch: astriaTestModeIsOn ? "fast" : "sd15",
       },
     };
 
-    const response = await axios.post(DOMAIN + "/tunes", body, {
+    // Send request to Astria API to create a new tune
+    console.log("ASTRIA_TRAIN_MODEL_REQUEST_BODY:", {
+      body: {
+        tune: {
+          ...body.tune,
+          image_urls: body.tune.image_urls.length,
+          prompt_attributes: JSON.stringify(body.tune.prompt_attributes, null, 2)
+        }
+      }
+    });
+
+    const response = await axios.post(DOMAIN + `/p/${galleryPackId}/tunes`, body, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${API_KEY}`,
       },
     });
 
-    const { status, statusText, data: tune } = response;
+    const { status, data: tune } = response;
 
+    // Handle potential errors from Astria API
     if (status !== 201) {
-      console.error({ status });
       if (status === 400) {
-        return NextResponse.json(
-          {
-            message: "webhookUrl must be a URL address",
-          },
-          { status }
-        );
+        return NextResponse.json({ message: "webhookUrl must be a URL address" }, { status: 400 });
       }
       if (status === 402) {
-        return NextResponse.json(
-          {
-            message: "Training models is only available on paid plans.",
-          },
-          { status }
-        );
+        return NextResponse.json({ message: "Training models is only available on paid plans." }, { status: 402 });
       }
+      return NextResponse.json({ message: "Error creating model" }, { status });
     }
 
-    const { error: modelError, data } = await supabase
+    // Save the new model to the database
+    const { error: modelError, data: modelData } = await supabase
       .from("models")
       .insert({
-        modelId: tune.id, // store tune Id field to retrieve workflow object if needed later
+        modelId: tune.id,
         user_id: user.id,
         name,
         type,
@@ -193,24 +128,16 @@ export async function POST(request: Request) {
 
     if (modelError) {
       console.error("modelError: ", modelError);
-      return NextResponse.json(
-        {
-          message: "Something went wrong!",
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: "Error saving model" }, { status: 500 });
     }
 
-    // Get the modelId from the created model
-    const modelId = data?.id;
-
+    const modelId = modelData?.id;
     const { error: samplesError } = await supabase.from("samples").insert(
       images.map((sample: string) => ({
-        modelId: modelId,
+        model_id: modelId,
         uri: sample,
       }))
     );
-
     if (samplesError) {
       console.error("samplesError: ", samplesError);
       return NextResponse.json(
@@ -221,41 +148,67 @@ export async function POST(request: Request) {
       );
     }
 
-    if (_credits && _credits.length > 0) {
-      const subtractedCredits = _credits[0].credits - 1;
-      const { error: updateCreditError, data } = await supabase
-        .from("credits")
-        .update({ credits: subtractedCredits })
-        .eq("user_id", user.id)
-        .select("*");
+    // Define prompts for image generation
+    const prompts = [
+      "A professional headshot in a business setting",
+      "A casual portrait in natural lighting",
+      "An artistic black and white portrait",
+      "A cheerful outdoor portrait",
+      "A dramatic studio portrait with moody lighting"
+    ];
 
-      console.log({ data });
-      console.log({ subtractedCredits });
+    // Generate images for each prompt
+    for (const prompt of prompts) {
+      const promptBody = {
+        tune_id: tune.id,
+        prompt,
+        negative_prompt: "Blurry, low quality, distorted features",
+        num_images: 4,
+        callback: promptWebhookWithParams
+      };
 
-      if (updateCreditError) {
-        console.error({ updateCreditError });
-        return NextResponse.json(
-          {
-            message: "Something went wrong!",
-          },
-          { status: 500 }
-        );
+      const promptResponse = await axios.post(DOMAIN + "/api/v2/prompts", promptBody, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+      });
+
+      if (promptResponse.status !== 201) {
+        console.error(`Error generating prompt: ${promptResponse.statusText}`);
       }
     }
+
+    // Update user's credit balance using the update_user_credits function
+    const { data: updateData, error: updateError } = await supabase
+      .rpc('update_user_credits', { 
+        user_id: user.id, 
+        credit_amount: -requiredCredits 
+      });
+
+    if (updateError) {
+      console.error("Update Error: ", updateError);
+      return NextResponse.json({ message: "Error updating user credits" }, { status: 500 });
+    }
+
+    // Insert credit transaction record
+    const { error: transactionError } = await supabase.from("credit_transactions").insert({
+      user_id: user.id,
+      amount: -requiredCredits,
+      balance_after: userCreditBalance - requiredCredits,
+      transaction_type: "usage",
+      entity_type: "model_training",
+      entity_reference_id: modelId?.toString(),
+    });
+
+    if (transactionError) {
+      console.error("Transaction Error: ", transactionError);
+      return NextResponse.json({ message: "Error recording transaction" }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "success", modelId: modelId }, { status: 200 });
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    {
-      message: "success",
-    },
-    { status: 200 }
-  );
 }

@@ -1,164 +1,189 @@
-import { Database } from "@/app/types/supabase"; 
-import { createClient } from "@supabase/supabase-js";
+// File: route.ts (for image generation)
+
+import { Database } from "@/app/types/supabase";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import axios from "axios";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
+// Environment variables
+const astriaApiKey = process.env.ASTRIA_API_KEY;
+const astriaTestModeIsOn = process.env.ASTRIA_TEST_MODE === "true";
 const appWebhookSecret = process.env.APP_WEBHOOK_SECRET;
-
-if (!resendApiKey) {
-  console.warn(
-    "We detected that the RESEND_API_KEY is missing from your environment variables. The app should still work but email notifications will not be sent. Please add your  to your environment variables if you want to enable email notifications."
-  );
-}
-
-if (!supabaseUrl) {
-  throw new Error("MISSING NEXT_PUBLIC_SUPABASE_URL!");
-}
-
-if (!supabaseServiceRoleKey) {
-  throw new Error("MISSING SUPABASE_SERVICE_ROLE_KEY!");
-}
 
 if (!appWebhookSecret) {
   throw new Error("MISSING APP_WEBHOOK_SECRET!");
 }
 
+if (!astriaApiKey) {
+  throw new Error("Missing API Key: Add your Astria API Key to generate headshots");
+}
+
 export async function POST(request: Request) {
-  type PromptData = {
-    id: number;
-    text: string;
-    negative_prompt: string;
-    steps: null;
-    tune_id: number;
-    trained_at: string;
-    started_training_at: string;
-    created_at: string;
-    updated_at: string;
-    images: string[];
-  };
-
-  const incomingData = (await request.json()) as { prompt: PromptData };
-
-  const { prompt } = incomingData;
-
-  console.log({ prompt });
-
-  const urlObj = new URL(request.url);
-  const user_id = urlObj.searchParams.get("user_id");
-  const webhook_secret = urlObj.searchParams.get("webhook_secret");
-
-  if (!webhook_secret) {
-    return NextResponse.json(
-      {
-        message: "Malformed URL, no webhook_secret detected!",
-      },
-      { status: 500 }
-    );
-  }
-
-  if (webhook_secret.toLowerCase() !== appWebhookSecret?.toLowerCase()) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized!",
-      },
-      { status: 401 }
-    );
-  }
-
-  if (!user_id) {
-    return NextResponse.json(
-      {
-        message: "Malformed URL, no user_id detected!",
-      },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient<Database>(
-    supabaseUrl as string,
-    supabaseServiceRoleKey as string,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.admin.getUserById(user_id);
-
-  if (error) {
-    return NextResponse.json(
-      {
-        message: error.message,
-      },
-      { status: 401 }
-    );
-  }
+  // Initialize Supabase client
+  const supabase = createRouteHandlerClient<Database>({ cookies });
+  
+  // Authenticate user
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json(
-      {
-        message: "Unauthorized",
-      },
-      { status: 401 }
-    );
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Parse request payload
+  const payload = await request.json();
+  const { urls: images, type, name } = payload;
+
+  // Validate number of sample images
+  if (images?.length < 4) {
+    return NextResponse.json({ message: "Upload at least 4 sample images" }, { status: 400 });
+  }
+
+  // Check user credits
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('credit_balance')
+    .eq('id', user.id)
+    .single();
+
+  if (userError) {
+    console.error({ userError });
+    return NextResponse.json({ message: "Error checking credits" }, { status: 500 });
+  }
+
+  if (!userData || typeof userData.credit_balance !== 'number') {
+    return NextResponse.json({ message: "Error retrieving user credit balance" }, { status: 500 });
+  }
+
+  // Calculate required credits: 50 each for 5 prompts
+  const requiredCredits = 5 * 50;
+  if (userData.credit_balance < requiredCredits) {
+    return NextResponse.json({ message: `Not enough credits. You need ${requiredCredits} credits.` }, { status: 400 });
   }
 
   try {
-    // Here we join all of the arrays into one.
-    const allHeadshots = prompt.images;
-    const modelId = prompt.tune_id;
+    // Existing functionality: Prepare webhook URLs
+    const trainWebhook = `https://${process.env.VERCEL_URL}/astria/train-webhook`;
+    const trainWebhookWithParams = `${trainWebhook}?user_id=${user.id}&webhook_secret=${appWebhookSecret}`;
+    const promptWebhook = `https://${process.env.VERCEL_URL}/astria/prompt-webhook`;
+    const promptWebhookWithParams = `${promptWebhook}?user_id=${user.id}&webhook_secret=${appWebhookSecret}`;
 
-    const { data: model, error: modelError } = await supabase
+    const API_KEY = astriaApiKey;
+    const DOMAIN = "https://api.astria.ai";
+
+    // Existing functionality: Prepare request body for Astria API
+    const body = {
+      tune: {
+        title: name,
+        name: type,
+        callback: trainWebhookWithParams,
+        prompt_attributes: {
+          callback: promptWebhookWithParams
+        },
+        image_urls: images,
+        branch: astriaTestModeIsOn ? "fast" : "sd15",
+      },
+    };
+
+    // Existing functionality: Send request to Astria API to create a new tune
+    const response = await axios.post(DOMAIN + `/p/260/tunes`, body, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_KEY}`,
+      },
+    });
+
+    const { status, data: tune } = response;
+
+    // Handle potential errors from Astria API
+    if (status !== 201) {
+      if (status === 400) {
+        return NextResponse.json({ message: "webhookUrl must be a URL address" }, { status: 400 });
+      }
+      if (status === 402) {
+        return NextResponse.json({ message: "Training models is only available on paid plans." }, { status: 402 });
+      }
+      return NextResponse.json({ message: "Error creating model" }, { status });
+    }
+
+    // Existing functionality: Save the new model to the database
+    const { error: modelError, data: modelData } = await supabase
       .from("models")
-      .select("*")
-      .eq("modelId", modelId)
+      .insert({
+        modelId: tune.id,
+        user_id: user.id,
+        name,
+        type,
+      })
+      .select("id")
       .single();
 
     if (modelError) {
-      console.error({ modelError });
-      return NextResponse.json(
-        {
-          message: "Something went wrong!",
-        },
-        { status: 500 }
-      );
+      console.error("modelError: ", modelError);
+      return NextResponse.json({ message: "Error saving model" }, { status: 500 });
     }
 
-    await Promise.all(
-      allHeadshots.map(async (image) => {
-        const { error: imageError } = await supabase.from("images").insert({
-          modelId: Number(model.id),
-          uri: image,
-        });
-        if (imageError) {
-          console.error({ imageError });
-        }
+    const modelId = modelData?.id;
+
+    // Existing functionality: Define prompts for image generation
+    const prompts = [
+      "A professional headshot in a business setting",
+      "A casual portrait in natural lighting",
+      "An artistic black and white portrait",
+      "A cheerful outdoor portrait",
+      "A dramatic studio portrait with moody lighting"
+    ];
+
+    // Existing functionality: Generate images for each prompt
+    for (const prompt of prompts) {
+      const promptBody = {
+        tune_id: tune.id,
+        prompt,
+        negative_prompt: "Blurry, low quality, distorted features",
+        num_images: 4,
+        callback: promptWebhookWithParams
+      };
+
+      const promptResponse = await axios.post(DOMAIN + "/api/v2/prompts", promptBody, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+      });
+
+      if (promptResponse.status !== 201) {
+        console.error(`Error generating prompt: ${promptResponse.statusText}`);
+      }
+    }
+
+    // Calculate new balance
+    const newBalance = userData.credit_balance - requiredCredits;
+
+    // Insert credit transaction record
+    await supabase.from("credit_transactions").insert({
+      user_id: user.id,
+      amount: -requiredCredits,
+      balance_after: newBalance,
+      transaction_type: "usage",
+      action_type: "image_generation",
+      reference_id: modelId?.toString(),
+      created_at: new Date().toISOString(),
+    });
+
+    // Update user's credit balance
+    await supabase
+      .from("users")
+      .update({
+        credit_balance: newBalance,
+        last_credit_update: new Date().toISOString(),
       })
-    );
-    return NextResponse.json(
-      {
-        message: "success",
-      },
-      { status: 200, statusText: "Success" }
-    );
+      .eq("id", user.id);
+
+    return NextResponse.json({ message: "success" }, { status: 200 });
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      {
-        message: "Something went wrong!",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

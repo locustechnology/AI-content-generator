@@ -4,7 +4,8 @@ const Page = () => {
   return (
     <div>
      <PaddlePricing />
-    </div>
+   </div>
+    
   );
 };
 

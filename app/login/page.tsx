@@ -1,12 +1,13 @@
+// File: app/login/page.tsx
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Database } from "../types/supabase";
-import Login from "./components/page";
+import LoginPage from "./components/page";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({
+export default async function LoginPageWrapper({
   searchParams,
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -26,7 +27,7 @@ export default async function LoginPage({
 
   return (
     <div className="flex flex-col flex-1 w-full h-[calc(100vh-73px)]">
-      <Login host={host} searchParams={searchParams} />
+      <LoginPage host={host} searchParams={searchParams} />
     </div>
   );
 }
